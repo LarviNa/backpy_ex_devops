@@ -26,6 +26,19 @@ def get_db_connection():
         return connection
     except Error as e:
         print(f"Error connecting to MySQL: {e}")
+        # If database does not exist (error 1049), create it dynamically
+        if e.errno == 1049:
+            try:
+                temp_config = db_config.copy()
+                temp_config.pop('database', None)
+                temp_conn = mysql.connector.connect(**temp_config)
+                cursor = temp_conn.cursor()
+                cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_config['database']}")
+                cursor.close()
+                temp_conn.close()
+                return mysql.connector.connect(**db_config)
+            except Error as err:
+                print(f"Error creating database dynamically: {err}")
         return None
 
 def init_db():
